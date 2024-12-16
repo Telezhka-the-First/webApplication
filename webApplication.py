@@ -1,3 +1,7 @@
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
 class Application:
     def __init__(self):
         self.users = {}
@@ -5,43 +9,48 @@ class Application:
 
     def register_user(self, username, password):
         if username in self.users:
-            return "Error: User already exists."
+            return {"message": "Error: User already exists.", "status": "error"}
         self.users[username] = password
-        return "Registration successful."
+        return {"message": "Registration successful.", "status": "success"}
 
     def login_user(self, username, password):
         if username not in self.users:
-            return "Error: User not found."
+            return {"message": "Error: User not found.", "status": "error"}
         if self.users[username] != password:
-            return "Error: Incorrect password."
+            return {"message": "Error: Incorrect password.", "status": "error"}
         self.logged_in_user = username
-        return f"Login successful. Welcome, {username}!"
+        return {"message": f"Login successful. Welcome, {username}!", "status": "success"}
 
     def create_record(self, data):
         if not self.logged_in_user:
-            return "Error: User not logged in."
-        return f"Record created successfully: {data}"
+            return {"message": "Error: User not logged in.", "status": "error"}
+        return {"message": f"Record created successfully: {data}", "status": "success"}
 
+
+app_logic = Application()
+
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
+    result = app_logic.register_user(username, password)
+    return jsonify(result)
+
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
+    result = app_logic.login_user(username, password)
+    return jsonify(result)
+
+@app.route("/create_record", methods=["POST"])
+def create_record():
+    data = request.json
+    record_data = data.get("data")
+    result = app_logic.create_record(record_data)
+    return jsonify(result)
 
 if __name__ == "__main__":
-    app = Application()
-    print("Welcome to the Application!")
-    while True:
-        print("\nChoose an action: [1] Register, [2] Login, [3] Create Record, [4] Exit")
-        choice = input("Enter your choice: ")
-        if choice == "1":
-            username = input("Enter username: ")
-            password = input("Enter password: ")
-            print(app.register_user(username, password))
-        elif choice == "2":
-            username = input("Enter username: ")
-            password = input("Enter password: ")
-            print(app.login_user(username, password))
-        elif choice == "3":
-            data = input("Enter record data: ")
-            print(app.create_record(data))
-        elif choice == "4":
-            print("Goodbye!")
-            break
-        else:
-            print("Invalid choice. Try again.")
+    app.run(debug=True)
